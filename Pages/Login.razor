@@ -1,0 +1,45 @@
+﻿@page "/login"
+@inject PedidosFront.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
+@using PedidosFront.Models
+
+<h3 class="mb-3">Iniciar Sesión</h3>
+@if(!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<div class="card p-3 shadow-sm" style="max-width: 400px">
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" @bind="loginModel.Email"/>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Contraseña</label>
+        <input type="password" name="password" class="form-control" @bind="loginModel.Password" />
+    </div>
+
+    <button class="btn btn-primary w-100" @onclick="HandleLogin">Iniciar Sesión</button>
+</div>
+
+@code{
+    private LoginRequest loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        var success = await AuthService.LoginAsync(loginModel);
+
+        if (success)
+        {
+            errorMessage = null;
+
+            // Redirigir a página principal (ej. /productos)
+            NavigationManager.NavigateTo("/productos");
+        }
+        else
+        {
+            errorMessage = "Usuario o contraseña incorrectos";
+        }
+    }
+}

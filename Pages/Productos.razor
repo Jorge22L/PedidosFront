@@ -1,0 +1,48 @@
+﻿@page "/productos"
+@inject PedidosFront.Services.ProductoService ProductoService
+@using PedidosFront.Models
+@using PedidosFront.Models.Producto
+
+<h3 class="mb-3">Gestión de Productos</h3>
+
+@if(productos is null)
+{
+    <p><em>Cargando productos...</em></p>
+}
+else if(!productos.Any())
+{
+    <div class="alert alert-warning">No hay Productos</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Id</th>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Existencias</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var p in productos)
+            {
+                <tr>
+                    <td>@p.ProductoId</td>
+                    <td>@p.Nombre</td>
+                    <td>@p.PrecioVenta</td>
+                    <td>@p.Existencias</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code{
+    private List<ProductoDto>? productos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        productos = await ProductoService.GetAllAsync();
+    }
+}
