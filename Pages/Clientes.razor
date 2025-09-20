@@ -1,0 +1,174 @@
+﻿@page "/clientes"
+@inject PedidosFront.Services.ClienteService ClienteService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h3>Gestión de Clientes</h3>
+
+<button class="btn btn-primary mb-3" @onclick="ShowCreateForm">➕ Nuevo Cliente</button>
+
+@if (clientes is null)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (!clientes.Any())
+{
+    <p>No hay clientes registrados.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Cédula</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Consumidor Final</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in clientes)
+            {
+                <tr>
+                    <td>@c.ClienteID</td>
+                    <td>@c.Nombre</td>
+                    <td>@c.Cedula</td>
+                    <td>@c.Telefono</td>
+                    <td>@c.Direccion</td>
+                    <td>@(c.EsConsumidorFinal ? "Sí" : "No")</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-2" @onclick="() => Edit(c)">✏️ Editar</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(c.ClienteID)">🗑️ Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (isFormVisible)
+{
+    <div class="card p-3 mt-3">
+        <h5>@(isEditMode ? "Editar Cliente" : "Nuevo Cliente")</h5>
+        <EditForm Model="clienteModel" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Nombre</label>
+                <InputText class="form-control" @bind-Value="clienteModel.Nombre" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Cédula</label>
+                <InputText class="form-control" @bind-Value="clienteModel.Cedula" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Teléfono</label>
+                <InputText class="form-control" @bind-Value="clienteModel.Telefono" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Dirección</label>
+                <InputText class="form-control" @bind-Value="clienteModel.Direccion" />
+            </div>
+
+            <div class="mb-3 form-check">
+                <InputCheckbox class="form-check-input" @bind-Value="clienteModel.EsConsumidorFinal" />
+                <label class="form-check-label">Consumidor Final</label>
+            </div>
+
+            <button type="submit" class="btn btn-success">@((isEditMode ? "Actualizar" : "Guardar"))</button>
+            <button type="button" class="btn btn-secondary ms-2" @onclick="CancelForm">Cancelar</button>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private List<Models.Cliente.ClienteDto>? clientes;
+    private bool isFormVisible = false;
+    private bool isEditMode = false;
+    private Models.Cliente.ClienteDto clienteModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClientes();
+    }
+
+    private async Task LoadClientes()
+    {
+        clientes = await ClienteService.GetAllAsync();
+    }
+
+    private void ShowCreateForm()
+    {
+        clienteModel = new Models.Cliente.ClienteDto();
+        isFormVisible = true;
+        isEditMode = false;
+    }
+
+    private void Edit(Models.Cliente.ClienteDto cliente)
+    {
+        clienteModel = new Models.Cliente.ClienteDto
+        {
+            ClienteID = cliente.ClienteID,
+            Nombre = cliente.Nombre,
+            Cedula = cliente.Cedula,
+            Telefono = cliente.Telefono,
+            Direccion = cliente.Direccion,
+            EsConsumidorFinal = cliente.EsConsumidorFinal
+        };
+        isEditMode = true;
+        isFormVisible = true;
+    }
+
+    private void CancelForm()
+    {
+        isFormVisible = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (isEditMode)
+        {
+            var cmd = new Models.Cliente.ActualizarClienteCommand
+            {
+                ClienteID = clienteModel.ClienteID,
+                Nombre = clienteModel.Nombre,
+                Cedula = clienteModel.Cedula,
+                Telefono = clienteModel.Telefono,
+                Direccion = clienteModel.Direccion,
+                EsConsumidorFinal = clienteModel.EsConsumidorFinal
+            };
+            await ClienteService.UpdateAsync(cmd);
+        }
+        else
+        {
+            var cmd = new Models.Cliente.CrearClienteCommand
+            {
+                Nombre = clienteModel.Nombre,
+                Cedula = clienteModel.Cedula,
+                Telefono = clienteModel.Telefono,
+                Direccion = clienteModel.Direccion,
+                EsConsumidorFinal = clienteModel.EsConsumidorFinal
+            };
+            await ClienteService.CreateAsync(cmd);
+        }
+
+        isFormVisible = false;
+        await LoadClientes();
+    }
+
+    private async Task Delete(int id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"¿Eliminar cliente {id}?"))
+        {
+            await ClienteService.DeleteAsync(id);
+            await LoadClientes();
+        }
+    }
+}

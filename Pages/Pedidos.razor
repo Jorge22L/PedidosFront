@@ -1,0 +1,181 @@
+﻿@page "/pedidos"
+@using PedidosFront.Models.Pedido
+@using PedidosFront.Models.Cliente
+@using PedidosFront.Models.Producto
+@using PedidosFront.Services
+@inject PedidoService PedidoService
+@inject ClienteService ClienteService
+@inject ProductoService ProductoService
+@inject IJSRuntime JS
+
+<h3>Gestión de Pedidos</h3>
+
+<button class="btn btn-primary mb-3" @onclick="ShowCreateForm">➕ Nuevo Pedido</button>
+
+@if (pedidos is null)
+{
+    <p><em>Cargando pedidos...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in pedidos)
+            {
+                <tr>
+                    <td>@p.PedidoId</td>
+                    <td>@p.ClienteNombre</td>
+                    <td>@p.Fecha.ToShortDateString()</td>
+                    <td>@p.Total.ToString("C")</td>
+                    <td>@p.Estado</td>
+                    <td>
+                        <a class="btn btn-sm btn-info" href=@($"/pedidos/{p.PedidoId}")>🔍 Ver Detalle</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (isFormVisible)
+{
+    <div class="card p-3 mt-3">
+        <h5>Nuevo Pedido</h5>
+
+        <EditForm Model="pedidoModel" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label>Cliente</label>
+                <InputSelect class="form-control" @bind-Value="pedidoModel.ClienteId">
+                    <option value="">-- Seleccione Cliente --</option>
+                    @foreach (var c in clientes)
+                    {
+                        <option value="@c.ClienteID">@c.Nombre</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label>Forma de Pago</label>
+                <InputSelect class="form-control" @bind-Value="pedidoModel.FormaPago">
+                    <option value="Contado">Contado</option>
+                    <option value="Crédito">Crédito</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <h6>Detalles</h6>
+                @foreach (var d in pedidoModel.Detalles)
+                {
+                    <div class="row mb-2">
+                        <div class="col">
+                            <select class="form-select" @onchange="(e) => OnProductoSeleccionado(d, e)">
+                                <option value="">-- Producto --</option>
+                                @foreach (var prod in productos)
+                                {
+                                    <option value="@prod.ProductoId">@prod.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col">
+                            <input type="number" class="form-control" @bind="d.Cantidad" placeholder="Cantidad" />
+                        </div>
+                        <div class="col">
+                            <input type="number" class="form-control" step="0.01" @bind="d.PrecioUnitario" readonly />
+                        </div>
+                        <div class="col">
+                            <input type="number" class="form-control" step="0.01" @bind="d.Descuento" placeholder="Descuento" />
+                        </div>
+                        <div class="col">
+                            <input type="checkbox" class="form-check-input" @bind="d.TieneIVA" disabled /> IVA
+                        </div>
+                    </div>
+                }
+
+                <button type="button" class="btn btn-sm btn-secondary" @onclick="AddDetalle">➕ Agregar Línea</button>
+            </div>
+
+            <button type="submit" class="btn btn-success">Guardar Pedido</button>
+            <button type="button" class="btn btn-secondary ms-2" @onclick="CancelForm">Cancelar</button>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private List<PedidoDto>? pedidos;
+    private List<ClienteDto> clientes = new();
+    private List<ProductoDto> productos = new();
+    private CrearPedidoCommand pedidoModel = new();
+    private bool isFormVisible = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pedidos = await PedidoService.GetAllAsync();
+        clientes = await ClienteService.GetAllAsync();
+        productos = await ProductoService.GetAllAsync();
+    }
+
+    private void ShowCreateForm()
+    {
+        pedidoModel = new CrearPedidoCommand
+        {
+            Estado = "Pendiente",
+            FormaPago = "Contado",
+            Detalles = new List<DetallePedidoCommand>()
+        };
+        isFormVisible = true;
+    }
+
+    private void CancelForm()
+    {
+        isFormVisible = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        var ok = await PedidoService.CreateAsync(pedidoModel);
+        if (ok)
+        {
+            await JS.InvokeVoidAsync("alert", "Pedido guardado con éxito");
+            pedidos = await PedidoService.GetAllAsync();
+            isFormVisible = false;
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Error al guardar el pedido");
+        }
+    }
+
+    private void AddDetalle()
+    {
+        pedidoModel.Detalles.Add(new DetallePedidoCommand());
+    }
+
+    private void OnProductoSeleccionado(DetallePedidoCommand detalle, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int productoId))
+        {
+            var producto = productos.FirstOrDefault(p => p.ProductoId == productoId);
+            if (producto != null)
+            {
+                detalle.ProductoId = producto.ProductoId;
+                detalle.PrecioUnitario = producto.PrecioVenta;  // 🔥 Autocompletado
+                detalle.TieneIVA = producto.TieneIVA ?? false;  // 🔥 Autocompletado
+            }
+        }
+    }
+}

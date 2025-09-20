@@ -1,0 +1,82 @@
+﻿@page "/pedidos/{id:int}"
+@using PedidosFront.Models.Pedido
+@inject PedidosFront.Services.PedidoService PedidoService
+@inject NavigationManager Nav
+
+<h3>Detalle Pedido</h3>
+
+@if (pedido is null)
+{
+    <p><em>Cargando pedido...</em></p>
+}
+else
+{
+    <div class="card mb-3 p-3">
+        <h5>Encabezado</h5>
+        <p><strong>ID:</strong> @pedido.PedidoId</p>
+        <p><strong>Cliente:</strong> @pedido.ClienteNombre</p>
+        <p><strong>Fecha:</strong> @pedido.Fecha.ToString("dd/MM/yyyy")</p>
+        <p><strong>Forma de Pago:</strong> @pedido.FormaPago</p>
+        <p><strong>Estado:</strong> @pedido.Estado</p>
+
+        <h6 class="mt-3">Totales</h6>
+        <ul>
+            <li><strong>Subtotal:</strong> @pedido.SubTotal.ToString("C")</li>
+            <li><strong>IVA:</strong> @pedido.IVA.ToString("C")</li>
+            <li><strong>Descuento:</strong> @pedido.Descuento.ToString("C")</li>
+            <li><strong>Total:</strong> @pedido.Total.ToString("C")</li>
+        </ul>
+    </div>
+
+    <div class="card p-3">
+        <h5>Detalles del Pedido</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Código</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Descuento</th>
+                    <th>IVA</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in pedido.Detalles)
+                {
+                    <tr>
+                        <td>@d.ProductoNombre</td>
+                        <td>@d.ProductoCodigo</td>
+                        <td>@d.Cantidad</td>
+                        <td>@d.PrecioUnitario.ToString("C")</td>
+                        <td>@d.Descuento.ToString("C")</td>
+                        <td>
+                            @(d.TieneIVA
+                                                ? $"Sí ({d.IVA.ToString("C")})"
+                                                : "No")
+                </td>
+                <td>@d.SubtotalLinea.ToString("C")</td>
+            </tr>
+                        }
+            </tbody>
+        </table>
+    </div>
+
+    <button class="btn btn-secondary mt-3" @onclick="Volver">⬅️ Volver</button>
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+    private PedidoDto? pedido;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pedido = await PedidoService.GetByIdAsync(id);
+    }
+
+    private void Volver()
+    {
+        Nav.NavigateTo("/pedidos");
+    }
+}

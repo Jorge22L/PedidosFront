@@ -22,6 +22,8 @@ builder.Services.AddScoped(sp => new HttpClient
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProductoService>();
+builder.Services.AddScoped<ClienteService>();
+builder.Services.AddScoped<PedidoService>();
 
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
