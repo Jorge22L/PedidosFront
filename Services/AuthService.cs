@@ -9,7 +9,8 @@ namespace PedidosFront.Services
         private readonly HttpClient _http;
         private readonly IJSRuntime _js;
 
-        private const string TOKEN_KEY = "EstaEsUnaClaveMuyLargaParaQueFuncioneElJwt";
+        // 🔑 Aquí solo usamos una clave para almacenar el token en el browser
+        private const string TOKEN_KEY = "jwt_token";
 
         public AuthService(HttpClient http, IJSRuntime js)
         {
@@ -17,25 +18,24 @@ namespace PedidosFront.Services
             _js = js;
         }
 
-        // Login: Enviar email y password a la API
+        // Login
         public async Task<bool> LoginAsync(LoginRequest request)
         {
             var response = await _http.PostAsJsonAsync("api/Usuarios/Login", request);
 
             if (!response.IsSuccessStatusCode)
-            {
                 return false;
-            }
 
             var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
 
-            if(loginResponse is not null && !string.IsNullOrEmpty(loginResponse.Token))
+            if (loginResponse is not null && !string.IsNullOrEmpty(loginResponse.Token))
             {
-                // Guardar Token en Local Storage
+                // Guardar Token en Local Storage bajo "jwt_token"
                 await _js.InvokeVoidAsync("localStorage.setItem", TOKEN_KEY, loginResponse.Token);
 
-                // Inyectar en HttpClient para próximas llamads
-                _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResponse.Token);
+                // Configurar HttpClient
+                _http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResponse.Token);
 
                 return true;
             }
@@ -43,16 +43,15 @@ namespace PedidosFront.Services
             return false;
         }
 
-        // Logout: quitar el token
+        // Logout
         public async Task LogoutAsync()
         {
             await _js.InvokeVoidAsync("localStorage.removeItem", TOKEN_KEY);
             _http.DefaultRequestHeaders.Authorization = null;
         }
 
-        // Verifica si el token sigue guardado
-
-        public async Task<string> GetTokenAsync()
+        // Obtener token actual
+        public async Task<string?> GetTokenAsync()
         {
             return await _js.InvokeAsync<string?>("localStorage.getItem", TOKEN_KEY);
         }

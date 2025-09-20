@@ -20,7 +20,8 @@ namespace PedidosFront.Services
             var token = await _js.InvokeAsync<string>("localStorage.getItem", "jwt_token");
             if (!string.IsNullOrEmpty(token))
             {
-                _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                _http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             }
         }
 
