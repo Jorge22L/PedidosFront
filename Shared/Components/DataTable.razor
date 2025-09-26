@@ -1,0 +1,48 @@
+﻿@typeparam TItem
+
+<div class="card p-3 shadow-sm">
+    <table class="table table-hover table-striped">
+        <thead>
+            <tr>
+                @foreach (var header in Headers)
+                {
+                    <th>@header</th>
+                }
+                @if (ActionTemplate != null)
+                {
+                    <th>Acciones</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @if (Items is { Count: > 0 })
+            {
+                @foreach (var item in Items)
+                {
+                    <tr>
+                        @RowTemplate(item)
+                        @if (ActionTemplate != null)
+                        {
+                            <td>@ActionTemplate(item)</td>
+                        }
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="@(Headers.Count + (ActionTemplate == null ? 0 : 1))">
+                        <em>No hay registros a mostrar</em>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public List<TItem> Items { get; set; } = new();
+    [Parameter] public List<string> Headers { get; set; } = new();
+    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
+    [Parameter] public RenderFragment<TItem>? ActionTemplate { get; set; }
+}

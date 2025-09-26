@@ -126,7 +126,7 @@ else
     {
         pedidos = await PedidoService.GetAllAsync();
         clientes = await ClienteService.GetAllAsync();
-        productos = await ProductoService.GetAllAsync();
+        productos = await ProductoService.ObtenerListadoProductos();
     }
 
     private void ShowCreateForm()

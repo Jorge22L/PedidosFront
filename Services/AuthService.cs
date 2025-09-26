@@ -1,5 +1,5 @@
 ﻿using Microsoft.JSInterop;
-using PedidosFront.Models;
+using PedidosFront.Models.Login;
 using System.Net.Http.Json;
 
 namespace PedidosFront.Services

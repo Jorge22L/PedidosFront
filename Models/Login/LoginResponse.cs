@@ -1,4 +1,4 @@
-﻿namespace PedidosFront.Models
+﻿namespace PedidosFront.Models.Login
 {
     public class LoginResponse
     {
